@@ -837,7 +837,9 @@ class Strategy(
         self._data_source = data_source
         self._start_date = to_datetime(start_date)
         self._end_date = to_datetime(end_date)
-        self._adjust = adjust
+        if adjust is not None:
+            self._adjust = adjust
+        
         verify_date_range(self._start_date, self._end_date)
         if config is not None:
             self._verify_config(config)
@@ -1454,13 +1456,21 @@ class Strategy(
             sym for execution in self._executions for sym in execution.symbols
         }
         if isinstance(self._data_source, DataSource):
-            df = self._data_source.query(
-                unique_syms,
-                self._start_date,
-                self._end_date,
-                timeframe,
-                adjust= self._adjust,
-            )
+            try:
+                df = self._data_source.query(
+                    unique_syms,
+                    self._start_date,
+                    self._end_date,
+                    timeframe,
+                    adjust=self._adjust if self._adjust is not None else None
+                )
+            except AttributeError:
+                df = self._data_source.query(
+                    unique_syms,
+                    self._start_date,
+                    self._end_date,
+                    timeframe
+                )
         else:
             df = _between(self._data_source, self._start_date, self._end_date)
             df = df[df[DataCol.SYMBOL.value].isin(unique_syms)]
